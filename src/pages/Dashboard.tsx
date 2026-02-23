@@ -1,11 +1,12 @@
 import Navbar from "@/components/Navbar";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Plus, FileText, Pill, Syringe, Activity, Stethoscope,
-  Heart, Calendar, AlertCircle, TrendingUp, User, QrCode
+  FileText, Pill, Syringe, Activity, Stethoscope,
+  Heart, Calendar, AlertCircle, TrendingUp, User
 } from "lucide-react";
+import EmergencyQRDialog from "@/components/dashboard/EmergencyQRDialog";
+import AddRecordDialog from "@/components/dashboard/AddRecordDialog";
 
 const patientInfo = {
   name: "Sarah Johnson",
@@ -81,12 +82,8 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
-              <QrCode className="h-4 w-4" /> Emergency QR
-            </Button>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" /> Add Record
-            </Button>
+            <EmergencyQRDialog patient={patientInfo} />
+            <AddRecordDialog />
           </div>
         </div>
 

@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="border-t bg-muted/50">
       <div className="container py-12">
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-2">
           <div>
             <Link to="/" className="flex items-center gap-2 font-heading text-lg font-bold">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-hero">
@@ -24,24 +24,6 @@ export default function Footer() {
               <li><Link to="/about" className="hover:text-foreground transition-colors">About</Link></li>
               <li><Link to="/awareness" className="hover:text-foreground transition-colors">Awareness</Link></li>
               <li><Link to="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Features</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Health Timeline</li>
-              <li>AI Insights</li>
-              <li>Family Accounts</li>
-              <li>Emergency QR</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-semibold">Legal</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
-              <li>HIPAA Compliance</li>
-              <li>Data Security</li>
             </ul>
           </div>
         </div>

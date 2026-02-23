@@ -7,14 +7,6 @@ import {
   BookOpen, Video, Newspaper
 } from "lucide-react";
 
-const categories = [
-  { label: "All", active: true },
-  { label: "Daily Tips" },
-  { label: "Seasonal Alerts" },
-  { label: "Prevention" },
-  { label: "Emergency" },
-  { label: "Government Schemes" },
-];
 
 const articles = [
   {
@@ -100,21 +92,6 @@ export default function Awareness() {
 
         <section className="py-12">
           <div className="container">
-            {/* Category filters */}
-            <div className="mb-10 flex flex-wrap gap-2">
-              {categories.map((c) => (
-                <button
-                  key={c.label}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    c.active
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
 
             {/* Articles grid */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
