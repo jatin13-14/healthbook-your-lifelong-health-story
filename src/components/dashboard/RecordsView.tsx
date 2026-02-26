@@ -1,41 +1,74 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Stethoscope, Pill, Syringe, Activity, ArrowLeft } from "lucide-react";
+import { FileText, Stethoscope, Pill, Syringe, Activity, ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { useHealthRecords } from "@/hooks/useHealthRecords";
+import { useToast } from "@/hooks/use-toast";
 
-const allRecords = [
-  { date: "Feb 15, 2026", type: "Doctor Visit", icon: Stethoscope, title: "Annual Checkup — Dr. Patel", desc: "General physical exam. All vitals normal." },
-  { date: "Jan 28, 2026", type: "Lab Report", icon: FileText, title: "Complete Blood Count (CBC)", desc: "Hemoglobin: 13.2 g/dL, WBC: 7,200. All normal." },
-  { date: "Jan 10, 2026", type: "Prescription", icon: Pill, title: "Montelukast 10mg", desc: "Once daily at bedtime for asthma control." },
-  { date: "Dec 20, 2025", type: "Vaccination", icon: Syringe, title: "Flu Vaccine (2025-26)", desc: "Annual influenza vaccination." },
-  { date: "Nov 5, 2025", type: "Vitals", icon: Activity, title: "Blood Pressure & Sugar Check", desc: "BP: 118/76 mmHg, Fasting Sugar: 92 mg/dL." },
-  { date: "Oct 12, 2025", type: "Doctor Visit", icon: Stethoscope, title: "Asthma Follow-up — Dr. Kumar", desc: "Breathing improved. Continue current medication." },
-  { date: "Sep 3, 2025", type: "Lab Report", icon: FileText, title: "Lipid Panel", desc: "Total cholesterol: 185, LDL: 110, HDL: 55. Borderline." },
-];
+const iconMap: Record<string, any> = {
+  "Doctor Visit": Stethoscope,
+  "Lab Report": FileText,
+  "Prescription": Pill,
+  "Vaccination": Syringe,
+  "Vitals": Activity,
+};
 
 export default function RecordsView({ onBack }: { onBack: () => void }) {
+  const { records, isLoading, deleteRecord } = useHealthRecords();
+  const { toast } = useToast();
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRecord.mutateAsync(id);
+      toast({ title: "Record deleted" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
-        <h2 className="font-heading text-lg font-bold">All Health Records ({allRecords.length})</h2>
+        <h2 className="font-heading text-lg font-bold">All Health Records ({records.length})</h2>
       </div>
-      <div className="space-y-3">
-        {allRecords.map((r, i) => (
-          <div key={i} className="flex items-start gap-4 rounded-xl border bg-card p-4 transition-all hover:shadow-card">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-accent">
-              <r.icon className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-heading text-sm font-bold">{r.title}</h3>
-                <Badge variant="secondary" className="text-xs">{r.type}</Badge>
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+      ) : records.length === 0 ? (
+        <p className="py-12 text-center text-muted-foreground">No records yet. Add your first health record!</p>
+      ) : (
+        <div className="space-y-3">
+          {records.map((r) => {
+            const Icon = iconMap[r.type] || FileText;
+            return (
+              <div key={r.id} className="flex items-start gap-4 rounded-xl border bg-card p-4 transition-all hover:shadow-card">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-accent">
+                  <Icon className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-heading text-sm font-bold">{r.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">{r.type}</Badge>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(r.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{r.description}</p>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {new Date(r.record_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                  {r.file_url && (
+                    <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs text-primary hover:underline">
+                      View attachment →
+                    </a>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">{r.desc}</p>
-              <span className="mt-1 block text-xs text-muted-foreground">{r.date}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      emergency_profiles: {
+        Row: {
+          allergies: string[] | null
+          blood_group: string | null
+          chronic_conditions: string[] | null
+          created_at: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allergies?: string[] | null
+          blood_group?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allergies?: string[] | null
+          blood_group?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_records: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string | null
+          id: string
+          record_date: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          record_date: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          record_date?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      medications: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          frequency: string | null
+          id: string
+          name: string
+          prescriber: string | null
+          purpose: string | null
+          refills_left: number | null
+          start_date: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          name: string
+          prescriber?: string | null
+          purpose?: string | null
+          refills_left?: number | null
+          start_date?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          name?: string
+          prescriber?: string | null
+          purpose?: string | null
+          refills_left?: number | null
+          start_date?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
