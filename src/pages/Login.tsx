@@ -12,7 +12,6 @@ type AuthMode = "login" | "signup" | "otp-request" | "otp-verify";
 
 export default function Login() {
   const [mode, setMode] = useState<AuthMode>("login");
-  const [role, setRole] = useState<"patient" | "doctor" | "admin">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -41,7 +40,7 @@ export default function Login() {
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { full_name: fullName, role },
+        data: { full_name: fullName, role: "patient" },
       },
     });
     setLoading(false);
@@ -152,23 +151,6 @@ export default function Login() {
           {/* Signup form */}
           {mode === "signup" && (
             <form className="space-y-4" onSubmit={handleSignup}>
-              <div className="mb-4">
-                <Label className="mb-2 block text-sm font-medium">I am a</Label>
-                <div className="flex gap-2">
-                  {(["patient", "doctor", "admin"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRole(r)}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-colors ${
-                        role === r ? "border-primary bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div>
                 <Label htmlFor="name">Full Name</Label>
                 <div className="relative mt-1">
@@ -260,6 +242,12 @@ export default function Login() {
               </button>
             </form>
           )}
+
+          <div className="mt-6 flex justify-center gap-4 text-sm text-muted-foreground">
+            <Link to="/doctor-login" className="hover:text-primary hover:underline">Doctor Login</Link>
+            <span>•</span>
+            <Link to="/admin-login" className="hover:text-primary hover:underline">Admin Login</Link>
+          </div>
         </motion.div>
       </div>
     </div>
