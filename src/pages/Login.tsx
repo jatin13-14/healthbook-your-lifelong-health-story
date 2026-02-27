@@ -8,10 +8,11 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type AuthMode = "login" | "signup" | "otp-request" | "otp-verify";
+type AuthMode = "signup" | "otp-request" | "otp-verify";
 
 export default function Login() {
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>("otp-request");
+  const [role, setRole] = useState<"patient" | "doctor" | "admin">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -19,18 +20,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/dashboard");
-    }
-  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,14 +99,6 @@ export default function Login() {
           {/* Mode tabs */}
           <div className="mb-6 flex rounded-lg border bg-muted/50 p-1">
             <button
-              onClick={() => setMode("login")}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                mode === "login" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Email Login
-            </button>
-            <button
               onClick={() => setMode("otp-request")}
               className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 mode === "otp-request" || mode === "otp-verify" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
@@ -174,29 +155,6 @@ export default function Login() {
               </div>
               <Button type="submit" className="w-full gap-2" disabled={loading}>
                 {loading ? "Creating..." : "Create Account"} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </form>
-          )}
-
-          {/* Email login form */}
-          {mode === "login" && (
-            <form className="space-y-4" onSubmit={handleEmailLogin}>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="you@example.com" className="pl-10" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="password" type="password" placeholder="••••••••" className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-              </div>
-              <Button type="submit" className="w-full gap-2" disabled={loading}>
-                {loading ? "Logging in..." : "Log In"} <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
           )}
