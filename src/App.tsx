@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import DoctorLogin from "./pages/DoctorLogin";
 import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +29,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/doctor-login" element={<DoctorLogin />} />
           <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/*" element={<Dashboard />} />
+          <Route path="/doctor/*" element={<DoctorDashboard />} />
+          <Route path="/admin/*" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
