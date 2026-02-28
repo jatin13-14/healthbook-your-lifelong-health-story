@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,9 +30,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/doctor-login" element={<DoctorLogin />} />
           <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/dashboard/*" element={<Dashboard />} />
-          <Route path="/doctor/*" element={<DoctorDashboard />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="/dashboard/*" element={<ProtectedRoute loginPath="/login"><Dashboard /></ProtectedRoute>} />
+          <Route path="/doctor/*" element={<ProtectedRoute loginPath="/doctor-login"><DoctorDashboard /></ProtectedRoute>} />
+          <Route path="/admin/*" element={<ProtectedRoute loginPath="/admin-login"><AdminDashboard /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
