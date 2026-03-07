@@ -60,9 +60,21 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Sign up flow
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Sign up uses Supabase Auth and the Django backend: the frontend calls `supabase.auth.signUp()`, then `POST /api/create-patient-account/` (with `VITE_API_BASE_URL`) to create the Patient record.
+
+If you see **"Failed to fetch"** when signing up, the request to Supabase is being blocked. Fix it in Supabase:
+
+1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project.
+2. Go to **Authentication** → **URL Configuration**.
+3. Set **Site URL** to your app origin (e.g. `http://localhost:8080` when running on port 8080).
+4. Under **Redirect URLs**, add:
+   - `http://localhost:8080/dashboard`
+   - `http://localhost:8080`
+   (Add the same for any other port or domain you use, e.g. `http://localhost:5173/dashboard`.)
+
+Save and try sign up again.
 
 ## Can I connect a custom domain to my Lovable project?
 

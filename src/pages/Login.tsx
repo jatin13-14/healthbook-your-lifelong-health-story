@@ -1,67 +1,102 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Heart, Mail, Lock, User, ArrowRight, KeyRound } from "lucide-react";
+import { Heart, Mail, Lock, User, ArrowRight, Phone } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { createPatientAccount, login, setAuthToken, type ApiError } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
-type AuthMode = "signup" | "otp-request" | "otp-verify";
+type AuthMode = "signup" | "signin";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+
+function validateSignup(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  contact: string
+): string | null {
+  if (!email.trim()) return "Email is required.";
+  if (!EMAIL_REGEX.test(email.trim())) return "Enter a valid email address.";
+  if (!password) return "Password is required.";
+  if (password.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  if (!firstName.trim() && !lastName.trim()) return "First name or last name is required.";
+  if (!contact.trim()) return "Contact is required.";
+  return null;
+}
 
 export default function Login() {
-  const [mode, setMode] = useState<AuthMode>("otp-request");
-  const [role, setRole] = useState<"patient" | "doctor" | "admin">("patient");
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [otpToken, setOtpToken] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading, setUserFromLogin } = useAuth();
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = validateSignup(email, password, firstName, lastName, contact);
+    if (validationError) {
+      toast({ title: "Validation failed", description: validationError, variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName, role: "patient" },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Signup failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Check your email", description: "We've sent a verification link to confirm your account." });
+    try {
+      await createPatientAccount({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        contact: contact.trim(),
+        email: email.trim(),
+        password,
+      });
+      const result = await login(email.trim(), password);
+      setAuthToken(result.token);
+      setUserFromLogin(result);
+      navigate("/dashboard", { replace: true });
+    } catch (err: unknown) {
+      const body = (err as { body?: ApiError }).body;
+      const errDetail = body?.detail || (body?.errors ? JSON.stringify(body.errors) : undefined) || (err instanceof Error ? err.message : "Something went wrong.");
+      toast({ title: "Sign up failed", description: errDetail, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpRequest = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "OTP sent", description: "Check your email for a magic link or enter the OTP code." });
-      setMode("otp-verify");
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      toast({ title: "Required", description: "Enter email and password.", variant: "destructive" });
+      return;
     }
-  };
-
-  const handleOtpVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({ email, token: otpToken, type: "email" });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Invalid OTP", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/dashboard");
+    try {
+      const result = await login(trimmedEmail, password);
+      setAuthToken(result.token);
+      setUserFromLogin(result);
+      navigate("/dashboard", { replace: true });
+    } catch (err: unknown) {
+      const body = (err as { body?: ApiError }).body;
+      const errDetail = body?.detail || (err instanceof Error ? err.message : "Invalid email or password.");
+      toast({ title: "Sign in failed", description: errDetail, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,12 +134,12 @@ export default function Login() {
           {/* Mode tabs */}
           <div className="mb-6 flex rounded-lg border bg-muted/50 p-1">
             <button
-              onClick={() => setMode("otp-request")}
+              onClick={() => setMode("signin")}
               className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                mode === "otp-request" || mode === "otp-verify" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+                mode === "signin" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
               }`}
             >
-              OTP Login
+              Sign In
             </button>
             <button
               onClick={() => setMode("signup")}
@@ -117,26 +152,27 @@ export default function Login() {
           </div>
 
           <h1 className="mb-2 font-heading text-2xl font-bold">
-            {mode === "signup" ? "Create Your HealthBook" : mode === "otp-verify" ? "Enter OTP" : "Welcome Back"}
+            {mode === "signup" ? "Create Your HealthBook" : "Welcome Back"}
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "Start your health journey today"
-              : mode === "otp-request"
-              ? "We'll send a one-time code to your email"
-              : mode === "otp-verify"
-              ? `Enter the 6-digit code sent to ${email}`
-              : "Log in to access your health timeline"}
+            {mode === "signup" ? "Start your health journey today" : "Sign in to access your health timeline"}
           </p>
 
           {/* Signup form */}
           {mode === "signup" && (
             <form className="space-y-4" onSubmit={handleSignup}>
               <div>
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="first-name">First Name</Label>
                 <div className="relative mt-1">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="name" placeholder="Dr. Jane Smith" className="pl-10" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  <Input id="first-name" placeholder="Jane" className="pl-10" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="last-name">Last Name</Label>
+                <div className="relative mt-1">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="last-name" placeholder="Smith" className="pl-10" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </div>
               </div>
               <div>
@@ -144,6 +180,13 @@ export default function Login() {
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="s-email" type="email" placeholder="you@example.com" className="pl-10" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="contact">Contact</Label>
+                <div className="relative mt-1">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="contact" type="tel" placeholder="+1 234 567 8900" className="pl-10" value={contact} onChange={(e) => setContact(e.target.value)} />
                 </div>
               </div>
               <div>
@@ -159,45 +202,26 @@ export default function Login() {
             </form>
           )}
 
-          {/* OTP request form */}
-          {mode === "otp-request" && (
-            <form className="space-y-4" onSubmit={handleOtpRequest}>
+          {/* Sign In form */}
+          {mode === "signin" && (
+            <form className="space-y-4" onSubmit={handleSignIn}>
               <div>
-                <Label htmlFor="otp-email">Email</Label>
+                <Label htmlFor="signin-email">Email</Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="otp-email" type="email" placeholder="you@example.com" className="pl-10" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input id="signin-email" type="email" placeholder="you@example.com" className="pl-10" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
               </div>
-              <Button type="submit" className="w-full gap-2" disabled={loading}>
-                {loading ? "Sending..." : "Send OTP"} <KeyRound className="h-4 w-4" />
-              </Button>
-            </form>
-          )}
-
-          {/* OTP verify form */}
-          {mode === "otp-verify" && (
-            <form className="space-y-4" onSubmit={handleOtpVerify}>
               <div>
-                <Label htmlFor="otp-code">6-digit OTP Code</Label>
+                <Label htmlFor="signin-password">Password</Label>
                 <div className="relative mt-1">
-                  <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="otp-code"
-                    placeholder="123456"
-                    className="pl-10 text-center tracking-widest text-lg"
-                    maxLength={6}
-                    value={otpToken}
-                    onChange={(e) => setOtpToken(e.target.value.replace(/\D/g, ""))}
-                  />
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="signin-password" type="password" placeholder="••••••••" className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
               </div>
               <Button type="submit" className="w-full gap-2" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Login"} <ArrowRight className="h-4 w-4" />
+                {loading ? "Signing in..." : "Sign In"} <ArrowRight className="h-4 w-4" />
               </Button>
-              <button type="button" onClick={() => setMode("otp-request")} className="w-full text-center text-sm text-muted-foreground hover:text-primary">
-                Didn't receive? Send again
-              </button>
             </form>
           )}
 

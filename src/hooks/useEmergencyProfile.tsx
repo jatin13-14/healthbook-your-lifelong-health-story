@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  apiEmergencyProfileGet,
+  apiEmergencyProfileCreate,
+  apiEmergencyProfileUpdate,
+} from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export interface EmergencyProfile {
@@ -21,36 +25,20 @@ export function useEmergencyProfile() {
   const query = useQuery({
     queryKey: ["emergency_profile", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("emergency_profiles")
-        .select("*")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data as EmergencyProfile | null;
+      if (!user?.id) return null;
+      return apiEmergencyProfileGet(user.id) as Promise<EmergencyProfile | null>;
     },
     enabled: !!user,
   });
 
   const upsertProfile = useMutation({
     mutationFn: async (profile: Partial<Omit<EmergencyProfile, "id" | "user_id" | "created_at" | "updated_at">>) => {
-      const { data: existing } = await supabase
-        .from("emergency_profiles")
-        .select("id")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
+      if (!user?.id) throw new Error("Not authenticated");
+      const existing = await apiEmergencyProfileGet(user.id);
       if (existing) {
-        const { error } = await supabase
-          .from("emergency_profiles")
-          .update(profile)
-          .eq("id", existing.id);
-        if (error) throw error;
+        await apiEmergencyProfileUpdate(user.id, profile);
       } else {
-        const { error } = await supabase
-          .from("emergency_profiles")
-          .insert({ ...profile, user_id: user!.id });
-        if (error) throw error;
+        await apiEmergencyProfileCreate(user.id, profile);
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["emergency_profile"] }),

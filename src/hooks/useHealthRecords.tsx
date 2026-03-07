@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  apiHealthRecordsList,
+  apiHealthRecordCreate,
+  apiHealthRecordDelete,
+} from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export interface HealthRecord {
@@ -20,33 +24,27 @@ export function useHealthRecords() {
   const query = useQuery({
     queryKey: ["health_records", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("health_records")
-        .select("*")
-        .order("record_date", { ascending: false });
-      if (error) throw error;
-      return data as HealthRecord[];
+      if (!user?.id) return [];
+      const data = await apiHealthRecordsList(user.id);
+      return data.sort(
+        (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+      ) as HealthRecord[];
     },
     enabled: !!user,
   });
 
   const addRecord = useMutation({
     mutationFn: async (record: { type: string; title: string; description?: string; record_date: string; file_url?: string }) => {
-      const { data, error } = await supabase
-        .from("health_records")
-        .insert({ ...record, user_id: user!.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      if (!user?.id) throw new Error("Not authenticated");
+      return apiHealthRecordCreate(user.id, record);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["health_records"] }),
   });
 
   const deleteRecord = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("health_records").delete().eq("id", id);
-      if (error) throw error;
+      if (!user?.id) throw new Error("Not authenticated");
+      await apiHealthRecordDelete(user.id, id);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["health_records"] }),
   });
@@ -54,10 +52,7 @@ export function useHealthRecords() {
   return { records: query.data ?? [], isLoading: query.isLoading, addRecord, deleteRecord };
 }
 
-export async function uploadMedicalFile(userId: string, file: File) {
-  const path = `${userId}/${Date.now()}_${file.name}`;
-  const { error } = await supabase.storage.from("medical-files").upload(path, file);
-  if (error) throw error;
-  const { data } = supabase.storage.from("medical-files").getPublicUrl(path);
-  return data.publicUrl;
+/** File upload: not implemented (backend can add POST /api/health-records/upload/ later). Returns null so record is saved without file_url. */
+export async function uploadMedicalFile(_userId: string, _file: File): Promise<string | null> {
+  return null;
 }

@@ -54,7 +54,9 @@ export default function RecordsView({ onBack }: { onBack: () => void }) {
                       </Button>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{r.description}</p>
+                  {r.description != null && r.description !== "" && (
+                    <p className="text-sm text-muted-foreground">{r.description}</p>
+                  )}
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {new Date(r.record_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>

@@ -37,16 +37,30 @@ export default function AddRecordDialog() {
     }
     setLoading(true);
     try {
-      let file_url: string | undefined;
+      let file_url: string | null | undefined;
       if (file && user) {
         file_url = await uploadMedicalFile(user.id, file);
       }
-      await addRecord.mutateAsync({ type, title, description: description || undefined, record_date: date, file_url });
+      await addRecord.mutateAsync({
+        type,
+        title,
+        description: description?.trim() || undefined,
+        record_date: date,
+        ...(file_url != null && file_url !== "" && { file_url }),
+      });
       toast({ title: "Record added", description: `"${title}" has been added to your timeline.` });
       setType(""); setTitle(""); setDescription(""); setDate(""); setFile(null);
       setOpen(false);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const e = err as { message?: string; body?: { detail?: string; errors?: Record<string, string[]> } };
+      const detail = e.body?.detail ?? (typeof e.body?.errors === "object" && e.body?.errors
+        ? Object.entries(e.body.errors).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join("; ")
+        : null);
+      toast({
+        title: "Could not add record",
+        description: detail || e.message || "Something went wrong. Check the backend is running and you are signed in.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

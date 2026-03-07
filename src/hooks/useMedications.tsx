@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  apiMedicationsList,
+  apiMedicationCreate,
+  apiMedicationUpdate,
+  apiMedicationDelete,
+} from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export interface Medication {
@@ -23,41 +28,35 @@ export function useMedications() {
   const query = useQuery({
     queryKey: ["medications", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("medications")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Medication[];
+      if (!user?.id) return [];
+      const data = await apiMedicationsList(user.id);
+      return data.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ) as Medication[];
     },
     enabled: !!user,
   });
 
   const addMedication = useMutation({
     mutationFn: async (med: Omit<Medication, "id" | "user_id" | "created_at">) => {
-      const { data, error } = await supabase
-        .from("medications")
-        .insert({ ...med, user_id: user!.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      if (!user?.id) throw new Error("Not authenticated");
+      return apiMedicationCreate(user.id, med);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["medications"] }),
   });
 
   const updateMedication = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Medication> & { id: string }) => {
-      const { error } = await supabase.from("medications").update(updates).eq("id", id);
-      if (error) throw error;
+      if (!user?.id) throw new Error("Not authenticated");
+      await apiMedicationUpdate(user.id, id, updates);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["medications"] }),
   });
 
   const deleteMedication = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("medications").delete().eq("id", id);
-      if (error) throw error;
+      if (!user?.id) throw new Error("Not authenticated");
+      await apiMedicationDelete(user.id, id);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["medications"] }),
   });

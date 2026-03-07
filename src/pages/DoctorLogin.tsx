@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Heart, Mail, Lock, ArrowRight, Stethoscope } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { login, setAuthToken } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function DoctorLogin() {
   const [email, setEmail] = useState("");
@@ -14,16 +15,25 @@ export default function DoctorLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setUserFromLogin } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      const result = await login(email.trim(), password);
+      if (result.role !== "doctor") {
+        toast({ title: "Access denied", description: "Doctor credentials required.", variant: "destructive" });
+        return;
+      }
+      setAuthToken(result.token);
+      setUserFromLogin(result);
       navigate("/doctor/profile");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Login failed";
+      toast({ title: "Login failed", description: msg, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
